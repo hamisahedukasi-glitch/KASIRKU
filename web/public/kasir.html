@@ -1457,28 +1457,96 @@ body.kk-authenticated #loginScreen,body.kk-authenticated #umkmRegisterModal{disp
     if(m.includes('rate limit')) return 'Terlalu banyak percobaan. Silakan coba beberapa saat lagi.';
     return (err&&err.message)||'Terjadi kesalahan autentikasi. Silakan coba lagi.';
   }
-  function setLoggedIn(user){
+  async function setLoggedIn(user){
+  try{
     const meta=(user&&user.user_metadata)||{};
-    const role=meta.role==='Kasir'?'Kasir':'Admin';
+    let role=meta.role==='Kasir'?'Kasir':'Admin';
+    let businessId=meta.ownerAccountId||'';
+    let profile=null;
+
+    // Ambil toko/business dari profile Supabase.
+    // Untuk Admin: profiles.id = auth.users.id.
+    if(sb&&user?.id){
+      const {data,error}=await sb
+        .from('profiles')
+        .select('business_id,full_name,role')
+        .eq('id',user.id)
+        .maybeSingle();
+
+      if(!error&&data){
+        profile=data;
+        if(data.role==='cashier') role='Kasir';
+        else if(data.role==='owner'||data.role==='admin') role='Admin';
+        businessId=data.business_id||businessId;
+      }
+    }
+
+    // Fallback untuk akun lama yang belum punya profile.
+    if(!businessId&&role==='Admin'){
+      businessId=user?.id||'';
+    }
+
     currentRole=role;
-    currentOwnerAccountId=meta.ownerAccountId||(role==='Admin'?user?.id||'':null);
+    currentOwnerAccountId=businessId||null;
+
     localStorage.setItem('kasirku_session_role',role);
-    localStorage.setItem('kasirku_session_user',meta.username||user.email||'');
-    if(meta.shop) localStorage.setItem('kasirku_shop',meta.shop);
+    localStorage.setItem(
+      'kasirku_session_user',
+      meta.username||profile?.full_name||user.email||''
+    );
+
+    if(meta.shop){
+      localStorage.setItem('kasirku_shop',meta.shop);
+    }
+
+    // Simpan session cloud secara eksplisit.
+    window.__kkSupabaseUser=user;
+    window.__kkSupabaseProfile=profile;
+    window.__kkSupabaseBusinessId=businessId||null;
+
     document.body.classList.add('kk-authenticated');
-    const l=document.getElementById('loginScreen'); if(l){l.style.display='none';l.classList.add('app-hidden');}
-    const r=document.getElementById('umkmRegisterModal'); if(r)r.style.display='none';
-    const c=document.getElementById('umkmCover'); if(c)c.style.setProperty('display','none','important');
-    try{applyRole();}catch(e){}
-    try{render();}catch(e){}
+
+    const l=document.getElementById('loginScreen');
+    if(l){
+      l.style.display='none';
+      l.classList.add('app-hidden');
+    }
+
+    const r=document.getElementById('umkmRegisterModal');
+    if(r)r.style.display='none';
+
+    const c=document.getElementById('umkmCover');
+    if(c)c.style.setProperty('display','none','important');
+
+    try{
+      applyRole();
+    }catch(e){}
+
+    // Pastikan workspace menggunakan business/toko yang benar.
+    try{
+      if(businessId){
+        setOwner(businessId);
+        migrateLegacyOnce(businessId);
+        hydrate();
+      }
+    }catch(e){}
+
+    try{
+      render();
+    }catch(e){}
+
+  }catch(e){
+    console.error('setLoggedIn error:',e);
+    toast('Login berhasil, tetapi data toko belum dapat dimuat.');
   }
+}
   async function initOfficialAuth(){
     try{
       const res=await fetch(configEndpoint,{cache:'no-store'});
       const cfg=await res.json();
       if(!res.ok) throw new Error(cfg.error||'Konfigurasi Supabase tidak tersedia.');
       if(!window.supabase||!window.supabase.createClient) throw new Error('Library Supabase belum termuat.');
-      sb=window.supabase.createClient(cfg.url,cfg.publishableKey);
+      sb=window.__kkSupabase||window.supabase.createClient(cfg.url,cfg.publishableKey);window.__kkSupabase=sb;
       authReady=true;
       const {data:{session}}=await sb.auth.getSession();
       if(session&&session.user) setLoggedIn(session.user);
@@ -1661,7 +1729,7 @@ body.kk-authenticated #loginScreen,body.kk-authenticated #umkmRegisterModal{disp
     note('loginNotice','');if(!u||!pw){say(admin?'Email dan password wajib diisi.':'Username dan PIN wajib diisi.','loginNotice');return}
     if(admin){
       if(!validEmail(u)){say('Format email belum benar.','loginNotice');return}
-      try{const r=await fetch('/api/supabase-config',{cache:'no-store'}),cfg=await r.json();if(!r.ok)throw new Error(cfg.error||'Konfigurasi Supabase tidak tersedia.');const client=window.supabase?.createClient(cfg.url,cfg.publishableKey);if(!client)throw new Error('Library Supabase belum termuat.');const {data,error}=await client.auth.signInWithPassword({email:u.toLowerCase(),password:pw});if(error){const m=String(error.message||'Email atau password salah.');say(/invalid login credentials/i.test(m)?'Email atau password salah.':/email not confirmed/i.test(m)?'Email belum dikonfirmasi. Silakan cek email pendaftaran Anda.':m,'loginNotice');return}const user=data.user,meta=user?.user_metadata||{};if(meta.role&&meta.role!=='Admin'){await client.auth.signOut();say('Akun ini bukan akun Admin.','loginNotice');return}await client.auth.updateUser({data:{...meta,role:'Admin',ownerAccountId:user.id}}).catch(()=>{});window.__kkSupabase=client;finish(user.id,'Admin',meta.username||user.email,meta.shop||'');return}catch(e){say(e.message||'Login Admin gagal.','loginNotice');return}
+      try{const r=await fetch('/api/supabase-config',{cache:'no-store'}),cfg=await r.json();if(!r.ok)throw new Error(cfg.error||'Konfigurasi Supabase tidak tersedia.');const client=window.__kkSupabase||window.supabase?.createClient(cfg.url,cfg.publishableKey);if(!client)throw new Error('Library Supabase belum termuat.');window.__kkSupabase=client;const {data,error}=await client.auth.signInWithPassword({email:u.toLowerCase(),password:pw});if(error){const m=String(error.message||'Email atau password salah.');say(/invalid login credentials/i.test(m)?'Email atau password salah.':/email not confirmed/i.test(m)?'Email belum dikonfirmasi. Silakan cek email pendaftaran Anda.':m,'loginNotice');return}const user=data.user,meta=user?.user_metadata||{};if(meta.role&&meta.role!=='Admin'){await client.auth.signOut();say('Akun ini bukan akun Admin.','loginNotice');return}let businessId='';try{const pr=await client.from('profiles').select('business_id,full_name,role').eq('id',user.id).maybeSingle();if(!pr.error&&pr.data){businessId=pr.data.business_id||'';window.__kkSupabaseProfile=pr.data}}catch(e){console.warn('Profile Admin belum terbaca:',e?.message||e)}if(!businessId)businessId=meta.ownerAccountId||user.id;await client.auth.updateUser({data:{...meta,role:'Admin',ownerAccountId:businessId}}).catch(()=>{});finish(businessId,'Admin',meta.username||user.email,meta.shop||'');return}catch(e){say(e.message||'Login Admin gagal.','loginNotice');return}
     }
     const matches=registry().filter(x=>String(x.username).toLowerCase()===u.toLowerCase()&&String(x.password)===pw);if(matches.length!==1){say('Username atau PIN Kasir salah.','loginNotice');return}const k=matches[0];finish(k.ownerAccountId,'Kasir',k.username,k.shop||'');say('Login Kasir berhasil.');
   };
@@ -1801,7 +1869,7 @@ body.kk-authenticated #loginScreen,body.kk-authenticated #umkmRegisterModal{disp
   async function init(){
     injectKasirPermissionUI();
     const storedRole=rawGet('kasirku_session_role')||'',storedUser=rawGet('kasirku_session_user')||'';
-    try{const r=await fetch('/api/supabase-config',{cache:'no-store'}),cfg=await r.json();if(r.ok&&window.supabase?.createClient){const c=window.supabase.createClient(cfg.url,cfg.publishableKey);window.__kkSupabase=c;const {data:{session}}=await c.auth.getSession();if(session?.user){const m=session.user.user_metadata||{};finish(session.user.id,'Admin',m.username||session.user.email,m.shop||'');return}}}catch(e){}
+    try{let c=window.__kkSupabase;if(!c){const r=await fetch('/api/supabase-config',{cache:'no-store'}),cfg=await r.json();if(r.ok&&window.supabase?.createClient){c=window.supabase.createClient(cfg.url,cfg.publishableKey);window.__kkSupabase=c}}if(c){const {data:{session}}=await c.auth.getSession();if(session?.user){const m=session.user.user_metadata||{};let businessId='';try{const pr=await c.from('profiles').select('business_id,full_name,role').eq('id',session.user.id).maybeSingle();if(!pr.error&&pr.data){businessId=pr.data.business_id||'';window.__kkSupabaseProfile=pr.data}}catch(e){console.warn('Profile session belum terbaca:',e?.message||e)}if(!businessId)businessId=m.ownerAccountId||session.user.id;finish(businessId,'Admin',m.username||session.user.email,m.shop||'');return}}}catch(e){}
     if(storedRole==='Kasir'&&storedUser){const k=registry().find(x=>String(x.username).toLowerCase()===String(storedUser).toLowerCase());if(k){finish(k.ownerAccountId,'Kasir',k.username,k.shop||'');return}}
     clear();const cover=document.getElementById('umkmCover'),login=document.getElementById('loginScreen'),reg=document.getElementById('umkmRegisterModal');if(login){login.style.display='none';login.classList.remove('app-hidden')}if(reg)reg.style.display='none';if(cover)cover.style.setProperty('display','flex','important');window.selectLoginRole('Admin');
   }
