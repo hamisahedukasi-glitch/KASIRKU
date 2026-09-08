@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="/manifest.webmanifest">
 <title>KASIRKU — POS Demo</title>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#fff;color:#171717;border-top:8px solid #151515}
@@ -961,7 +962,8 @@ function receiptDocumentHTML(){
   const width=getComputedStyle(document.documentElement).getPropertyValue("--receipt-width").trim()||"80mm";
   const appCss=[...document.querySelectorAll("style")].map(s=>s.textContent||"").join("\n");
   const printCss=`:root{--receipt-width:${width}}html,body{margin:0;padding:0;background:#fff;color:#111}body{font-family:"Courier New",monospace}.receipt{width:${width}!important;max-width:${width}!important;min-width:${width}!important;margin:0!important;box-sizing:border-box!important;box-shadow:none!important;max-height:none!important;height:auto!important;overflow:visible!important}.receipt img{max-width:100%}.print-page{width:${width};margin:0}.print-toolbar{width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;background:#fff;font-family:Arial,sans-serif;border-bottom:1px solid #eee}.print-toolbar .print-size{font-size:11px;color:#666;white-space:nowrap}.print-actions{display:flex;align-items:center;justify-content:flex-end}.print-action-menu{position:relative}.print-action-menu summary{list-style:none}.print-action-menu summary::-webkit-details-marker{display:none}.print-action-trigger{border:1px solid #d71920;background:#d71920;color:#fff;border-radius:7px;padding:7px 11px;font-weight:700;cursor:pointer;font-size:11px;white-space:nowrap}.print-action-dropdown{position:absolute;right:0;top:calc(100% + 5px);z-index:9999;display:flex;flex-direction:column;gap:4px;min-width:145px;padding:6px;background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:0 8px 22px rgba(0,0,0,.16)}.print-action-dropdown button{width:100%;border:1px solid #d71920;background:#fff;color:#d71920;border-radius:6px;padding:7px 9px;font-weight:700;cursor:pointer;font-size:11px;text-align:left;white-space:nowrap}.print-action-dropdown button.primary{background:#d71920;color:#fff}@page{size:${width} auto;margin:0}@media print{html,body{width:${width}!important;min-width:${width}!important;max-width:${width}!important;margin:0!important;padding:0!important;overflow:visible!important;background:#fff!important}.print-page{width:${width}!important;margin:0!important}.print-toolbar{display:none!important}.receipt{width:${width}!important;max-width:${width}!important;min-width:${width}!important;margin:0!important;padding:22px!important;box-shadow:none!important;max-height:none!important;height:auto!important;overflow:visible!important}}`;
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Struk ${xmlEsc(id)}</title><style>${appCss}\n${printCss}</style></head><body><div class="print-page"><div class="receipt">${receipt.innerHTML}</div></div></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="/manifest.webmanifest"><title>Struk ${xmlEsc(id)}</title><style>${appCss}\n${printCss}</style></head><body><div class="print-page"><div class="receipt">${receipt.innerHTML}</div></div></body></html>`;
 }
 
 function downloadBlob(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500)}
@@ -1005,7 +1007,8 @@ body{font-family:"Courier New",monospace!important;font-size:12px!important;line
 }`;
   const toolbar=`<div class="print-toolbar"><span class="print-size">Preview Struk</span><div class="print-actions"><details class="print-action-menu"><summary class="print-action-trigger">⋮ Aksi</summary><div class="print-action-dropdown"><button class="primary" onclick="window.print();this.closest('details').open=false">🖨 Cetak</button><button onclick="window.opener&&window.opener.downloadReceiptPDF();this.closest('details').open=false">📄 Simpan PDF</button><button onclick="window.opener&&window.opener.shareReceiptWhatsAppPDF();this.closest('details').open=false">💬 WA • PDF</button><button onclick="window.opener&&window.opener.shareReceiptWhatsAppEditable();this.closest('details').open=false">💬 WA • Teks</button><button onclick="window.opener&&window.opener.shareReceipt();this.closest('details').open=false">📷 Bagikan Foto</button><button onclick="window.close()">Tutup</button></div></details></div></div>`;
   w.document.open();
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title><style id="kk-print-style">${css}</style></head><body><div class="print-page">${toolbar}${bodyHTML||'<div class="receipt"><div style="text-align:center;font-weight:700">Struk KASIRKU</div><div style="text-align:center">Tidak ada data struk.</div></div>'}</div></body></html>`);
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="/manifest.webmanifest"><title>${safeTitle}</title><style id="kk-print-style">${css}</style></head><body><div class="print-page">${toolbar}${bodyHTML||'<div class="receipt"><div style="text-align:center;font-weight:700">Struk KASIRKU</div><div style="text-align:center">Tidak ada data struk.</div></div>'}</div></body></html>`);
   w.document.close();
   const prepare=()=>{
     try{
@@ -1189,7 +1192,8 @@ function printSalesReport(){
   const w=window.open("","_blank","width=1400,height=900");
   if(!w){toast("Jendela cetak diblokir browser. Izinkan pop-up.");return}
   w.document.open();
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${xmlEsc(title)} — ${xmlEsc(shop)}</title><style>${css}</style></head><body>${header}${clone.outerHTML}${footer}</body></html>`);
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="/manifest.webmanifest"><title>${xmlEsc(title)} — ${xmlEsc(shop)}</title><style>${css}</style></head><body>${header}${clone.outerHTML}${footer}</body></html>`);
   w.document.close();w.focus();setTimeout(()=>{try{w.print()}catch(e){}},700)
 }
 function printFullFinance(){openReportPrintWindow('finance')}
