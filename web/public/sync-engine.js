@@ -2,7 +2,7 @@
   "use strict";
 
   const DB_NAME = "kasirku-offline";
-  const DB_VERSION = 3;
+  const DB_VERSION = 4;
   const QUEUE = "sync_queue";
 
   let running = false;
@@ -23,6 +23,29 @@
   function openDB() {
     return new Promise(function (resolve, reject) {
       const req = indexedDB.open(DB_NAME, DB_VERSION);
+
+      req.onupgradeneeded = function () {
+        const db = req.result;
+
+        if (!db.objectStoreNames.contains("sales")) {
+          const s = db.createObjectStore("sales", { keyPath: "id" });
+          s.createIndex("workspaceId", "workspaceId", { unique: false });
+          s.createIndex("updatedAt", "updatedAt", { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains("sale_items")) {
+          const s = db.createObjectStore("sale_items", { keyPath: "id" });
+          s.createIndex("workspaceId", "workspaceId", { unique: false });
+          s.createIndex("saleId", "saleId", { unique: false });
+        }
+
+        if (!db.objectStoreNames.contains("sync_queue")) {
+          const s = db.createObjectStore("sync_queue", { keyPath: "id" });
+          s.createIndex("workspaceId", "workspaceId", { unique: false });
+          s.createIndex("status", "status", { unique: false });
+          s.createIndex("entityId", "entityId", { unique: false });
+        }
+      };
 
       req.onsuccess = function () {
         resolve(req.result);
@@ -574,5 +597,7 @@
     "KASIRKU Sync Engine siap."
   );
 })();
+
+
 
 

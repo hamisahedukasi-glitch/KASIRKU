@@ -2,7 +2,7 @@
   "use strict";
 
   const DB_NAME = "kasirku-offline";
-  const DB_VERSION = 3;
+  const DB_VERSION = 4;
 
   const SALES = "sales";
   const SALE_ITEMS = "sale_items";
@@ -322,4 +322,5 @@
     installPayHook();
   }
 })();
+
 
