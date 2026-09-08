@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# KASIRKU local backups
+**/*BACKUP*.html
+**/*backup*.html
+**/node_modules/
+**/*.zip

@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+build/
+
+# Environment / local config
+.env
+.env.*
+!.env.example
+
+# Local backups
+**/*BACKUP*.html
+**/*backup*.html
+**/*LAMA*.html
+**/*SEBELUM*.html
+
+# Archives
+*.zip
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
