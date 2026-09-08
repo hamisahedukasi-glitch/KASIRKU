@@ -1050,7 +1050,7 @@ function renderSalesChart(groups,period,tx=[]){
   const pay={};(tx||[]).forEach(t=>{const k=t.payment||'Lainnya';pay[k]=(pay[k]||0)+Number(t.total||0)});
   const payEntries=Object.entries(pay).sort((a,b)=>b[1]-a[1]).slice(0,6);
   const max=Math.max(...data.flatMap(v=>[v.net,v.cogs,v.profit]),1);
-  const line=(key,color,showValues=false)=>{const pts=data.map((v,i)=>{const x=45+(data.length===1?405:i*810/(data.length-1)),y=165-(Math.max(0,v[key])/max)*115;return [x,y]});const labels=showValues?pts.map((p,i)=>{const anchor=i===0?'start':(i===pts.length-1?'end':'middle');return `<text x="${p[0]}" y="${Math.max(14,p[1]-9)}" text-anchor="${anchor}" font-size="9" font-weight="700" fill="${color}">${rupiah(data[i][key])}</text>`}).join(''):'';return `<polyline points="${pts.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.2" fill="${color}"><title>${data[i].k}: ${rupiah(data[i][key])}</title></circle>`).join('')}${labels}`};
+  const line=(key,color,showValues=false)=>{const pts=data.map((v,i)=>{const x=45+(data.length===1?405:i*810/(data.length-1)),y=165-(Math.max(0,v[key])/max)*115;return [x,y]});const labels=showValues?pts.map((p,i)=>{const anchor=i===0?'start':(i===pts.length-1?'end':'middle');return `<text x="${p[0]}" y="${Math.max(14,p[1]-9)}" text-anchor="${anchor}" font-size="9" font-weight="700" fill="${color}">${rupiah(data[i][key])}</text>`}).join(''):'';const linePoints=data.length===1?`${Math.max(60,pts[0][0]-70)},${pts[0][1]} ${Math.min(850,pts[0][0]+70)},${pts[0][1]}`:pts.map(p=>p.join(',')).join(' ');return `<polyline points="${linePoints}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${color}"><title>${data[i].k}: ${rupiah(data[i][key])}</title></circle>`).join('')}${labels}`};
   const topMax=Math.max(...top.map(x=>Number(x.qty)||0),1);
   const bars=top.length?top.map((v,i)=>{const w=Math.max(5,(Number(v.qty||0)/topMax)*300);return `<text x="18" y="${34+i*28}" font-size="10" fill="#333">${xmlEsc(v.name).slice(0,28)}</text><rect x="190" y="${22+i*28}" width="${w}" height="16" rx="4" fill="#d71920"/><text x="${198+w}" y="${34+i*28}" font-size="10" fill="#333">${v.qty}</text>`}).join(''):'<text x="18" y="40" font-size="11" fill="#777">Belum ada data produk.</text>';
   const totalPay=Math.max(1,payEntries.reduce((a,x)=>a+Number(x[1]||0),0));
@@ -1189,7 +1189,7 @@ function closeKasirkuRegister(){const m=document.getElementById('umkmRegisterMod
 function initLogin(){ensureUsers();closeKasirkuRegister();const l=document.getElementById('loginScreen'),c=document.getElementById('umkmCover');if(currentRole){if(c)c.style.setProperty('display','none','important');if(l){l.style.display='none';l.classList.add('app-hidden')}}else{if(l){l.style.display='none';l.classList.remove('app-hidden')}if(c){c.style.display='flex';c.style.setProperty('visibility','visible');c.style.setProperty('opacity','1')}}}
 function editReceiptSettings(){openCustomKasir();setTimeout(()=>{const b=[...document.querySelectorAll('.custom-tab')].find(x=>x.textContent.includes('Struk'));if(b)customTab('struk',b)},0)}
 products.forEach(p=>{if(!p.sku)p.sku=p.code;if(!p.barcode)p.barcode=p.code});render();
-(function bindBayarButton(){const b=document.getElementById("kkBayarButton");if(!b)return;if(b.dataset.kasirkuBound)return;b.dataset.kasirkuBound="1";b.addEventListener("click",function(ev){if(ev.defaultPrevented)return;try{if(typeof pay==="function")pay()}catch(e){console.error("KASIRKU BAYAR:",e);toast("Tombol BAYAR mengalami kesalahan. Silakan coba lagi.")}},true)})();renderProducts();renderCashierProducts();renderStock();renderPurchases();renderCustomers();renderPromos();renderSales();renderFinance();renderExpenses();renderDebt();renderFullReport();renderPlan();loadSettings();loadCustomKasir();applyCustomKasir();initLogin();
+renderProducts();renderCashierProducts();renderStock();renderPurchases();renderCustomers();renderPromos();renderSales();renderFinance();renderExpenses();renderDebt();renderFullReport();renderPlan();loadSettings();loadCustomKasir();applyCustomKasir();initLogin();
 
 function openCoverFeature(page){
   if(!currentRole){
@@ -1738,3 +1738,4 @@ body.kk-authenticated #loginScreen,body.kk-authenticated #umkmRegisterModal{disp
 </script>
 </body>
 </html>
+
