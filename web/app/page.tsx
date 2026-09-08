@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function Home() {
-  redirect("/kasirku.html");
+  redirect("/kasir.html");
 }
