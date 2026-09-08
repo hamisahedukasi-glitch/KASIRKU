@@ -2,7 +2,7 @@
   "use strict";
 
   const DB_NAME = "kasirku-offline";
-  const DB_VERSION = 2;
+  const DB_VERSION = 3;
   const QUEUE = "sync_queue";
 
   let running = false;
@@ -574,4 +574,5 @@
     "KASIRKU Sync Engine siap."
   );
 })();
+
 
