@@ -28,3 +28,6 @@ pnpm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Old nested KASIRKU project
+KASIRKU_VSCode_READY_2026-09-05/
